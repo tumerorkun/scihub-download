@@ -1,0 +1,20 @@
+{
+    "name": "scihub-download",
+    "version": "1.0.0",
+    "description": "",
+    "main": "download.js",
+    "dependencies": {
+        "d3-dsv": "^1.2.0",
+        "node-fetch": "^2.6.0",
+        "xmldom": "^0.3.0"
+    },
+    "devDependencies": {},
+    "scripts": {
+        "download": "./download.js savedrecs.csv"
+    },
+    "keywords": [
+        "sci-hub"
+    ],
+    "author": "Orkun Tümer",
+    "license": "MIT"
+}
