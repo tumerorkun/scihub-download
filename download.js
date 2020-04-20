@@ -12,7 +12,6 @@ const d3Dsv = require("d3-dsv");
 async function getFileHTML(doi) {
     return await fetch(`https://sci-hub.im/${doi}`).then((r) => r.text());
 }
-
 async function download(url, name) {
     const response = await fetch(url);
     const ext = response.headers.get("content-type") === "application/pdf" ? "pdf" : "txt";
@@ -44,7 +43,6 @@ async function main(arg) {
                 const url = `${source.startsWith("//") ? "https:" : ""}${
                     frameElement.getAttribute("src").split("#")[0]
                 }`;
-                // console.log(url);
                 if (!fs.existsSync(path.resolve(process.cwd(), "downloads"))) {
                     fs.mkdirSync(path.resolve(process.cwd(), "downloads"));
                 }
