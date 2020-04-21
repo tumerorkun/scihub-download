@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Sci-Hub Downloader</title>
+    <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <!-- <h1>Hello World!</h1>
+    We are using node
+    <script>
+        document.write(process.versions.node);
+    </script>
+    , Chrome
+    <script>
+        document.write(process.versions.chrome);
+    </script>
+    , and Electron
+    <script>
+        document.write(process.versions.electron);
+    </script>
+    .
+
+    <a href="#" id="drag">item</a>
+    <script type="text/javascript" charset="utf-8">
+        document.getElementById("drag").ondragstart = (event) => {
+            event.preventDefault();
+            ipcRenderer.send("ondragstart", "/path/to/item");
+        };
+    </script> -->
+    <section id="root"></section>
+    <script src="./index.js"></script>
+</body>
+
+</html>
