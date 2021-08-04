@@ -6,7 +6,7 @@
     "dependencies": {
         "d3-dsv": "^1.2.0",
         "node-fetch": "^2.6.0",
-        "xmldom": "^0.3.0"
+        "xmldom": "^0.6.0"
     },
     "devDependencies": {
         "electron": "^8.2.3",
