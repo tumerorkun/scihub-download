@@ -1,14 +1,19 @@
 const fs = require("fs");
+const https = require('https');
 const util = require("util");
 const fetch = require("node-fetch");
 const DOMParser = require("xmldom").DOMParser;
 const path = require("path");
-const parser = new DOMParser({ errorHandler: () => {} });
+const parser = new DOMParser({ errorHandler: () => { } });
 const streamPipeline = util.promisify(require("stream").pipeline);
 const d3Dsv = require("d3-dsv");
 const os = require("os");
 const { app, BrowserWindow, ipcMain, nativeTheme } = require("electron");
 let windows;
+
+const agent = new https.Agent({
+    rejectUnauthorized: false,
+});
 function createWindow() {
     // Tarayıcı penceresini oluştur.
     const win = new BrowserWindow({
@@ -16,6 +21,7 @@ function createWindow() {
         height: 600,
         webPreferences: {
             nodeIntegration: true,
+            contextIsolation: false,
         },
     });
 
@@ -58,7 +64,7 @@ function get_file(file) {
     return parsedData;
 }
 async function getFileHTML(doi) {
-    return await fetch(`https://sci-hub.im/${doi}`).then((r) => r.text());
+    return await fetch(`https://sci-hub.se/${doi}`, { agent }).then((r) => r.text());
 }
 async function download(url, name) {
     const response = await fetch(url);
@@ -92,12 +98,11 @@ ipcMain.on("start-download", async (event) => {
             const item = list[i];
             const htmlString = await getFileHTML(item["DI"]);
             const dom = parser.parseFromString(htmlString);
-            const frameElement = dom.getElementsByTagName("iframe")[0];
+            const frameElement = dom.getElementsByTagName("embed")[0];
             if (frameElement) {
                 const source = frameElement.getAttribute("src");
-                const url = `${source.startsWith("//") ? "https:" : ""}${
-                    frameElement.getAttribute("src").split("#")[0]
-                }`;
+                const url = `${source.startsWith("//") ? "https:" : ""}${frameElement.getAttribute("src").split("#")[0]
+                    }`;
                 if (!fs.existsSync(path.resolve(os.homedir(), "Desktop", "downloads"))) {
                     fs.mkdirSync(path.resolve(os.homedir(), "Desktop", "downloads"));
                 }

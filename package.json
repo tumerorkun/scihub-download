@@ -5,12 +5,12 @@
     "main": "src/main/main.js",
     "dependencies": {
         "d3-dsv": "^1.2.0",
-        "node-fetch": "^2.6.0",
-        "xmldom": "^0.3.0"
+        "node-fetch": "^2.6.6",
+        "xmldom": "^0.6.0"
     },
     "devDependencies": {
-        "electron": "^8.2.3",
-        "electron-packager": "^14.2.1"
+        "electron": "^13.6.2",
+        "electron-packager": "^15.4.0"
     },
     "scripts": {
         "download": "./src/main/download.js savedrecs.csv",
