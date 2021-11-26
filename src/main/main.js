@@ -64,13 +64,18 @@ function get_file(file) {
     return parsedData;
 }
 async function getFileHTML(doi) {
-    return await fetch(`https://sci-hub.se/${doi}`, { agent }).then((r) => r.text());
+    return await fetch(`https://sci-hub.ru/${doi}`, { agent }).then((r) => r.text());
 }
-async function download(url, name) {
-    const response = await fetch(url);
-    const ext = response.headers.get("content-type") === "application/pdf" ? "pdf" : "txt";
+async function download(url, name, item, type) {
+    const response = await fetch(url, {
+        "method": "GET"
+    });
+    const ext = type === "application/pdf" ? "pdf" : "txt";
+    console.log(response)
     if (ext === "pdf") {
-        if (!response.ok) throw new Error(`unexpected response ${response.statusText}`);
+        if (!response.ok) {
+            throw new Error(`unexpected response ${response.statusText}`);
+        };
         await streamPipeline(
             response.body,
             fs.createWriteStream(
@@ -84,48 +89,101 @@ async function download(url, name) {
         );
         console.log(name, `Downloaded ${Math.round(response.headers.get("content-length") / 1000000)}MB`);
     } else {
-        windows.webContents.send("not-downloaded", item["DI"]);
+        throw new Error(`not downloaded ${ext}`);
     }
 }
 ipcMain.on("load-file-to-csv-parse", (event, path) => {
     event.returnValue = get_file(path);
 });
-
+const notDownloaded = (list, item) => {
+    windows.webContents.send("not-downloaded", item["DI"]);
+    if (!fs.existsSync(path.resolve(os.homedir(), "Desktop", "logs"))) {
+        fs.mkdirSync(path.resolve(os.homedir(), "Desktop", "logs"));
+        fs.writeFileSync(
+            path.resolve(os.homedir(), "Desktop", "logs", "errors.log"),
+            `${list.columns.join(";")}\n`,
+        );
+    }
+    fs.appendFileSync(
+        path.resolve(os.homedir(), "Desktop", "logs", "errors.log"),
+        `${list.columns.map((c) => item[c]).join(";")}\n`,
+    );
+}
+const wait = (ms = 1000) => new Promise((res, rej) => setTimeout(() => res(), ms));
 ipcMain.on("start-download", async (event) => {
     const list = parsedData;
     for (let i = 0; i < list.length; i++) {
         if (list[i]["DI"]) {
             const item = list[i];
-            const htmlString = await getFileHTML(item["DI"]);
-            const dom = parser.parseFromString(htmlString);
-            const frameElement = dom.getElementsByTagName("embed")[0];
-            if (frameElement) {
-                const source = frameElement.getAttribute("src");
-                const url = `${source.startsWith("//") ? "https:" : ""}${frameElement.getAttribute("src").split("#")[0]
-                    }`;
-                if (!fs.existsSync(path.resolve(os.homedir(), "Desktop", "downloads"))) {
-                    fs.mkdirSync(path.resolve(os.homedir(), "Desktop", "downloads"));
+            try {
+                const htmlString = await getFileHTML(item["DI"]);
+                const dom = parser.parseFromString(htmlString);
+                const frameElement = dom.getElementsByTagName("embed")[0];
+                if (frameElement) {
+                    const source = frameElement.getAttribute("src");
+                    const type = frameElement.getAttribute("type");
+                    const url = `${source.startsWith("//") ? "https:" : ""}${frameElement.getAttribute("src").split("#")[0]
+                        }`;
+                    console.log(url);
+                    if (!fs.existsSync(path.resolve(os.homedir(), "Desktop", "downloads"))) {
+                        fs.mkdirSync(path.resolve(os.homedir(), "Desktop", "downloads"));
+                    }
+                    try {
+                        await wait();
+                        await download(url, `${item['PY']}_${item['AU'].split(',')[0]}_PLASuperhydrophobic`, item, type);
+                        windows.webContents.send("downloaded", item["DI"]);
+                    } catch (error) {
+                        console.log(error);
+                        notDownloaded(list, item);
+                        try {
+                            await wait(3000);
+                            await download(url, `${item['PY']}_${item['AU'].split(',')[0]}_PLASuperhydrophobic`, item, type);
+                            windows.webContents.send("downloaded", item["DI"]);
+                        } catch (error) {
+                            console.log('retried', error);
+                            notDownloaded(list, item);
+                        }
+                    }
+                } else {
+                    notDownloaded(list, item);
                 }
-                try {
-                    await download(url, item["TI"]);
-                    windows.webContents.send("downloaded", item["DI"]);
-                } catch (error) {
-                    console.error(error);
-                }
-            } else {
-                windows.webContents.send("not-downloaded", item["DI"]);
-                if (!fs.existsSync(path.resolve(os.homedir(), "Desktop", "logs"))) {
-                    fs.mkdirSync(path.resolve(os.homedir(), "Desktop", "logs"));
-                    fs.writeFileSync(
-                        path.resolve(os.homedir(), "Desktop", "logs", "errors.log"),
-                        `${list.columns.join(";")}\n`,
-                    );
-                }
-                fs.appendFileSync(
-                    path.resolve(os.homedir(), "Desktop", "logs", "errors.log"),
-                    `${list.columns.map((c) => item[c]).join(";")}\n`,
-                );
+            } catch {
+                notDownloaded(list, item);
             }
         }
     }
 });
+
+ipcMain.on("single-download", async (event, arg) => {
+    const { item } = arg
+    const list = parsedData;
+    try {
+        const htmlString = await getFileHTML(item["DI"]);
+        console.log(htmlString)
+        const dom = parser.parseFromString(htmlString);
+        const frameElement = dom.getElementsByTagName("embed")[0];
+        if (frameElement) {
+            const source = frameElement.getAttribute("src");
+            const type = frameElement.getAttribute("type");
+            const url = `${source.startsWith("//") ? "https:" : ""}${frameElement.getAttribute("src").split("#")[0]
+                }`;
+            console.log(url);
+            if (!fs.existsSync(path.resolve(os.homedir(), "Desktop", "downloads"))) {
+                fs.mkdirSync(path.resolve(os.homedir(), "Desktop", "downloads"));
+            }
+            try {
+                await download(url, `${item['PY']}_${item['AU'].split(',')[0]}_PLASuperhydrophobic`, item, type);
+                windows.webContents.send("downloaded", item["DI"]);
+            } catch (error) {
+                console.log(error);
+                notDownloaded(list, item);
+            }
+        } else {
+            notDownloaded(list, item);
+        }
+    } catch {
+        notDownloaded(list, item);
+    }
+})
+
+

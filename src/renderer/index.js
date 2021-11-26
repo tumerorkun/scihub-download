@@ -3,9 +3,18 @@ const ipc = require("electron").ipcRenderer;
 const root = document.getElementById("root");
 const list = document.createElement("ul");
 let filePath;
-const createListItem = (...inner) => {
+const createListItem = (datum, ...inner) => {
     const item = document.createElement("li");
     inner.forEach((i) => item.appendChild(i));
+    const button = document.createElement('button');
+    button.innerHTML = 'Download'
+    button.onclick = () => {
+        ipc.send("single-download", {
+            item: datum,
+            id: datum["DI"]
+        });
+    }
+    item.appendChild(button);
     return item;
 };
 const div = (i) => {
@@ -30,7 +39,7 @@ input.onchange = (e) => {
     const parsedData = ipc.sendSync("load-file-to-csv-parse", target.files[0].path);
     filePath = parsedData;
     parsedData.forEach((datum) => {
-        const item = createListItem(div(datum["DI"]), div(datum["TI"]));
+        const item = createListItem(datum, div(datum["DI"]), div(datum["TI"]), div(datum["PY"]), div(datum["AU"]));
         item.id = datum["DI"];
         item.style.border = "1px solid #f2f2f2";
         item.style.padding = "2px";
@@ -39,10 +48,12 @@ input.onchange = (e) => {
     });
 };
 ipc.on("downloaded", (event, di) => {
+    console.log("downloaded", di)
     const listItem = document.getElementById(di);
     listItem.style.backgroundColor = "green";
 });
 ipc.on("not-downloaded", (event, di) => {
+    console.log("not-downloaded", di)
     const listItem = document.getElementById(di);
     listItem.style.backgroundColor = "red";
 });
