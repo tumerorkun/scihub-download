@@ -9,7 +9,7 @@
         "xmldom": "^0.6.0"
     },
     "devDependencies": {
-        "electron": "^13.6.2",
+        "electron": "^15.5.5",
         "electron-packager": "^15.4.0"
     },
     "scripts": {
